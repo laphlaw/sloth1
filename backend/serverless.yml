@@ -1,0 +1,113 @@
+service: sloth-alarm-app
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    STRIPE_SECRET_KEY: ${env:STRIPE_SECRET_KEY}
+    FIREBASE_PROJECT_ID: ${env:FIREBASE_PROJECT_ID}
+    FIREBASE_PRIVATE_KEY: ${env:FIREBASE_PRIVATE_KEY}
+    FIREBASE_CLIENT_EMAIL: ${env:FIREBASE_CLIENT_EMAIL}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: 
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-${sls:stage}-alarms"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-${sls:stage}-users"
+
+functions:
+  createAlarm:
+    handler: functions/alarms.create
+    events:
+      - http:
+          path: /alarms
+          method: post
+          cors: true
+
+  getAlarms:
+    handler: functions/alarms.list
+    events:
+      - http:
+          path: /alarms
+          method: get
+          cors: true
+
+  setupIntent:
+    handler: functions/payments.createSetupIntent
+    events:
+      - http:
+          path: /setup-intent
+          method: post
+          cors: true
+
+  savePaymentMethod:
+    handler: functions/payments.savePaymentMethod
+    events:
+      - http:
+          path: /save-payment-method
+          method: post
+          cors: true
+
+  getPaymentMethod:
+    handler: functions/payments.getPaymentMethod
+    events:
+      - http:
+          path: /payment-method
+          method: get
+          cors: true
+
+  checkLocation:
+    handler: functions/alarms.checkLocation
+    events:
+      - http:
+          path: /check-location
+          method: post
+          cors: true
+
+  processPayments:
+    handler: functions/payments.processPayments
+    events:
+      - schedule: rate(1 minute)
+
+resources:
+  Resources:
+    AlarmsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${sls:stage}-alarms
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: id
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${sls:stage}-users
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin

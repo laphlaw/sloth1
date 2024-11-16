@@ -1,70 +1,137 @@
-# Getting Started with Create React App
+# Sloth - Wake Up On Time
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Sloth is a unique alarm application that ensures you wake up on time by requiring you to physically move to a specific location to disable the alarm. If you fail to reach the location in time, a pre-set payment will be processed as a punishment.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- Google Authentication
+- Location-based alarm deactivation using GPS
+- Stripe integration for payment processing
+- Interactive map for setting alarm locations
+- Serverless backend using AWS Lambda and DynamoDB
 
-### `npm start`
+## Prerequisites
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Before running the application, you'll need:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js (v14 or later)
+- AWS Account and configured AWS CLI
+- Firebase Project
+- Google Maps API Key
+- Stripe Account
 
-### `npm test`
+## Environment Variables
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Create a `.env` file in the root directory with the following variables:
 
-### `npm run build`
+```env
+# Frontend
+REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+REACT_APP_FIREBASE_PROJECT_ID=your_firebase_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+REACT_APP_FIREBASE_APP_ID=your_firebase_app_id
+REACT_APP_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+REACT_APP_STRIPE_PUBLIC_KEY=your_stripe_public_key
+REACT_APP_API_URL=your_api_url
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+# Backend
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_PRIVATE_KEY=your_firebase_private_key
+FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Installation
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. Install frontend dependencies:
+```bash
+npm install
+```
 
-### `npm run eject`
+2. Install backend dependencies:
+```bash
+npm run backend:install
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Running the Application
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Development
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Run both frontend and backend concurrently:
+```bash
+npm run dev
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Or run them separately:
 
-## Learn More
+Frontend:
+```bash
+npm start
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Backend:
+```bash
+npm run backend:start
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Production Deployment
 
-### Code Splitting
+1. Deploy the backend to AWS:
+```bash
+npm run backend:deploy
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+2. Build and deploy the frontend to your hosting service of choice:
+```bash
+npm run build
+```
 
-### Analyzing the Bundle Size
+## Project Structure
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```
+sloth/
+├── src/                    # Frontend source code
+│   ├── components/         # React components
+│   ├── pages/             # Page components
+│   ├── context/           # React context providers
+│   └── utils/             # Utility functions
+├── backend/               # Serverless backend
+│   ├── functions/         # Lambda functions
+│   ├── lib/              # Shared backend utilities
+│   └── serverless.yml    # Serverless configuration
+└── public/               # Static assets
+```
 
-### Making a Progressive Web App
+## API Endpoints
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Alarms
+- `POST /alarms` - Create a new alarm
+- `GET /alarms` - List user's alarms
+- `POST /check-location` - Verify user's location
 
-### Advanced Configuration
+### Payments
+- `POST /setup-intent` - Create Stripe setup intent
+- `POST /save-payment-method` - Save payment method
+- `GET /payment-method` - Get payment method status
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Security
 
-### Deployment
+- All endpoints are protected with Firebase Authentication
+- Stripe payments are processed securely using their official SDK
+- User location data is only used when checking alarm conditions
+- Payment information is stored securely with Stripe
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Contributing
 
-### `npm run build` fails to minify
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
