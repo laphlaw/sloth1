@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
@@ -70,7 +70,6 @@ const ErrorMessage = styled.div`
 `;
 
 const CreateAlarm = () => {
-  console.log("api key: " + process.env.REACT_APP_GOOGLE_MAPS_API_KEY)
   const { user } = useAuth();
   const navigate = useNavigate();
   const [location, setLocation] = useState(null);
@@ -78,11 +77,29 @@ const CreateAlarm = () => {
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const defaultCenter = {
+  const [defaultCenter, setDefaultCenter] = useState({
     lat: 37.7749,
     lng: -122.4194
-  };
+  });
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      console.log("Inside navigator.geolocation")
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setDefaultCenter({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error("Error getting location: ", error);
+        }
+      );
+    } else {
+      console.log("Did not go inside navigator.geolocation")
+    }
+  }, []);
 
   const handleMapClick = (event) => {
     setLocation({
