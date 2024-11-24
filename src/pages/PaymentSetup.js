@@ -11,7 +11,8 @@ import {
 import styled from 'styled-components';
 import axios from 'axios';
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+// Use runtime configuration instead of environment variables
+const stripePromise = loadStripe(window.RUNTIME_CONFIG.stripe.publicKey);
 
 const Container = styled.div`
   padding: 2rem;
@@ -91,9 +92,9 @@ const PaymentForm = () => {
     }
 
     try {
-      // Get client secret from your backend
+      // Get client secret from your backend using runtime config API URL
       const { data: { clientSecret } } = await axios.post(
-        `${process.env.REACT_APP_API_URL}/setup-intent`,
+        `${window.RUNTIME_CONFIG.apiUrl}/setup-intent`,
         {},
         {
           headers: { Authorization: `Bearer ${await user.getIdToken()}` }
@@ -115,7 +116,7 @@ const PaymentForm = () => {
       } else {
         // Send payment method ID to your backend
         await axios.post(
-          `${process.env.REACT_APP_API_URL}/save-payment-method`,
+          `${window.RUNTIME_CONFIG.apiUrl}/save-payment-method`,
           {
             paymentMethodId: result.setupIntent.payment_method,
           },

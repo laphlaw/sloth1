@@ -70,6 +70,7 @@ const ErrorMessage = styled.div`
 `;
 
 const CreateAlarm = () => {
+  console.log("api key: " + process.env.REACT_APP_GOOGLE_MAPS_API_KEY)
   const { user } = useAuth();
   const navigate = useNavigate();
   const [location, setLocation] = useState(null);

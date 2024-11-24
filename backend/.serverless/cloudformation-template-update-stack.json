@@ -1,0 +1,1532 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ServerlessDeploymentBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "CreateAlarmLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/sloth-alarm-app-dev-createAlarm"
+      }
+    },
+    "GetAlarmsLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/sloth-alarm-app-dev-getAlarms"
+      }
+    },
+    "SetupIntentLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/sloth-alarm-app-dev-setupIntent"
+      }
+    },
+    "SavePaymentMethodLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/sloth-alarm-app-dev-savePaymentMethod"
+      }
+    },
+    "GetPaymentMethodLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/sloth-alarm-app-dev-getPaymentMethod"
+      }
+    },
+    "CheckLocationLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/sloth-alarm-app-dev-checkLocation"
+      }
+    },
+    "ProcessPaymentsLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/sloth-alarm-app-dev-processPayments"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "sloth-alarm-app",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup",
+                    "logs:TagResource"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/sloth-alarm-app-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/sloth-alarm-app-dev*:*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:Query",
+                    "dynamodb:Scan",
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem"
+                  ],
+                  "Resource": [
+                    "arn:aws:dynamodb:us-east-1:*:table/sloth-alarm-app-dev-alarms",
+                    "arn:aws:dynamodb:us-east-1:*:table/sloth-alarm-app-dev-users"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "sloth-alarm-app",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "CreateAlarmLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+        },
+        "Handler": "functions/alarms.create",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "sloth-alarm-app-dev-createAlarm",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "STRIPE_SECRET_KEY": "sk_test_placeholder",
+            "FIREBASE_PROJECT_ID": "sloth-dc40d",
+            "FIREBASE_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC8lxmFKkI5NhMS\nFUO15k7/DFCID5ra6+yNoR/7l2c8Ix2lrY/Eah4sd/9I9B7oAacJ4v713QQA7gYt\ns7gBmK8LZRvxMsZ6I5e1qG6+dmCdZ5jA7BqzUuhlMKIRFO2RFKiR6HxwFOdkLeKm\n+lgiQUbxRj3KrydpqMDXkTDlooJOD7TLqLohFjEpG1+5i7sVSl5QW35fysg8w7rU\nDJLkBKefmlFFS1lGYcxCj2BArUK7ioJUl58/1KVzUdOuTXBrncFv6uagL8XeXz/w\n31Wd38IUXHAF+/gutbbNOWt/IcAVCvZgTzUVkSh9AZyv/JMWxG5+sSzMA0eUpV7e\npbbyXuq5AgMBAAECggEAOdoAMiFsfzBfWUS8qKglw4d7jMF8t3t37Vpn/T3MpV4A\nUjqTx6Tl7K5C2ZZJhNI884N2wuUxvTdHHe3rnFHCILS7hZoV2JHikA9DKZoWuTJ2\nYXgMGMZuE9x/Ws4YslCsBVZUFe3TrZ+Fz8MsFhYANTNe8TYZ2QezYG1hmo/neRpA\njqPM2+zrWx3TJk0Ys1PO6KnKX5we7hHxC7J5sZWFGsvxJ6CObSKqGRYjPaxI14As\nqc1LXmQ9cbhmp2diLrvJNwYj6TfYImSSZmLzGtQhQVN03pUP7K6j8t825yNyK7UK\nvk5brh8HU4c77Hezk7sj1TFPs1uZGCc44rjVvortoQKBgQD3nJ23QIPf0RuHk2Mm\niusQKzZ+bhT55jrcECVLQ5zmoGkDWITXeT3OpFshwZYXg/32q/izD/mcHWZn42/0\n20IK2PtYomZv/LZT0W/HFrH0QUJKOBpy6eA1ujhHLW72jBBi1Emf8oh6WV+2VYD3\nL7mwN2uTWz1LtnHUpFCf/GnYBwKBgQDC+qBO+lJ0SOhVmcc0eLD6C5DxkAknjGm1\nibDP+qwgI8Atlin1C8bkGkdxR/wXGbAlqU8Xo3u9KaIr7BmQ4PaomPs7fA7LNSIw\nVpTSgPl+F7PklM8Z4BpCM3X25+1YklxkPIyJDyJ8ZNkEw/lrEBytkUQcYuCD6zyX\n2o1rAvz3PwKBgBQu4fQ0AAvYYaQVcXmMzUhOHW0E0BTmnVmev0t5QWrTHHw3VOyz\nZ0RWxU7lFrTn/2WB8w21eaUuCFDjixasYJ+9vA8nfa4XLU17vt69jNfaEes204EW\naz415ax3mZnjJNrJbw7omBNRAao9IfwEGeCxQ8WJJF/tiS3KDwBbdM01AoGAe4CV\nGnGk2NN1lwMZEzt/nmLFJL2/jrV6H+tfe92kOZdrm3SKjxUunj2nEzItk9RJpxFf\nb/G151P/zSJ37zUQCCset8cU99JoHYY6LjxTzHLnF9rKc/FnsJc4GXU++eN7cmKI\nAij8Bx8597LKwe4qvCZPpktbOzQ95VIiUa5K3bECgYA3EkXiL2/IQQqwRuEzLCcM\nnrCR9BQLkgPEugOdsyKEc+UeWy9lW77SY2AtI5E4lJ8Mlohffk7rdi3ndmJw6KxT\nSNIAv97vjMTlsrs5tlTRiaDXGTGRoI+o4W5d5RqTec6be9wA4ZuMyH1FK9HThB8O\nMJXPhsLiRO6+Jse8ipBEew==\n-----END PRIVATE KEY-----",
+            "FIREBASE_CLIENT_EMAIL": "firebase-adminsdk-27do9@sloth-dc40d.iam.gserviceaccount.com",
+            "STRIPE_WEBHOOK_SECRET": "whsec_placeholder"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "CreateAlarmLogGroup"
+      ]
+    },
+    "GetAlarmsLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+        },
+        "Handler": "functions/alarms.list",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "sloth-alarm-app-dev-getAlarms",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "STRIPE_SECRET_KEY": "sk_test_placeholder",
+            "FIREBASE_PROJECT_ID": "sloth-dc40d",
+            "FIREBASE_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC8lxmFKkI5NhMS\nFUO15k7/DFCID5ra6+yNoR/7l2c8Ix2lrY/Eah4sd/9I9B7oAacJ4v713QQA7gYt\ns7gBmK8LZRvxMsZ6I5e1qG6+dmCdZ5jA7BqzUuhlMKIRFO2RFKiR6HxwFOdkLeKm\n+lgiQUbxRj3KrydpqMDXkTDlooJOD7TLqLohFjEpG1+5i7sVSl5QW35fysg8w7rU\nDJLkBKefmlFFS1lGYcxCj2BArUK7ioJUl58/1KVzUdOuTXBrncFv6uagL8XeXz/w\n31Wd38IUXHAF+/gutbbNOWt/IcAVCvZgTzUVkSh9AZyv/JMWxG5+sSzMA0eUpV7e\npbbyXuq5AgMBAAECggEAOdoAMiFsfzBfWUS8qKglw4d7jMF8t3t37Vpn/T3MpV4A\nUjqTx6Tl7K5C2ZZJhNI884N2wuUxvTdHHe3rnFHCILS7hZoV2JHikA9DKZoWuTJ2\nYXgMGMZuE9x/Ws4YslCsBVZUFe3TrZ+Fz8MsFhYANTNe8TYZ2QezYG1hmo/neRpA\njqPM2+zrWx3TJk0Ys1PO6KnKX5we7hHxC7J5sZWFGsvxJ6CObSKqGRYjPaxI14As\nqc1LXmQ9cbhmp2diLrvJNwYj6TfYImSSZmLzGtQhQVN03pUP7K6j8t825yNyK7UK\nvk5brh8HU4c77Hezk7sj1TFPs1uZGCc44rjVvortoQKBgQD3nJ23QIPf0RuHk2Mm\niusQKzZ+bhT55jrcECVLQ5zmoGkDWITXeT3OpFshwZYXg/32q/izD/mcHWZn42/0\n20IK2PtYomZv/LZT0W/HFrH0QUJKOBpy6eA1ujhHLW72jBBi1Emf8oh6WV+2VYD3\nL7mwN2uTWz1LtnHUpFCf/GnYBwKBgQDC+qBO+lJ0SOhVmcc0eLD6C5DxkAknjGm1\nibDP+qwgI8Atlin1C8bkGkdxR/wXGbAlqU8Xo3u9KaIr7BmQ4PaomPs7fA7LNSIw\nVpTSgPl+F7PklM8Z4BpCM3X25+1YklxkPIyJDyJ8ZNkEw/lrEBytkUQcYuCD6zyX\n2o1rAvz3PwKBgBQu4fQ0AAvYYaQVcXmMzUhOHW0E0BTmnVmev0t5QWrTHHw3VOyz\nZ0RWxU7lFrTn/2WB8w21eaUuCFDjixasYJ+9vA8nfa4XLU17vt69jNfaEes204EW\naz415ax3mZnjJNrJbw7omBNRAao9IfwEGeCxQ8WJJF/tiS3KDwBbdM01AoGAe4CV\nGnGk2NN1lwMZEzt/nmLFJL2/jrV6H+tfe92kOZdrm3SKjxUunj2nEzItk9RJpxFf\nb/G151P/zSJ37zUQCCset8cU99JoHYY6LjxTzHLnF9rKc/FnsJc4GXU++eN7cmKI\nAij8Bx8597LKwe4qvCZPpktbOzQ95VIiUa5K3bECgYA3EkXiL2/IQQqwRuEzLCcM\nnrCR9BQLkgPEugOdsyKEc+UeWy9lW77SY2AtI5E4lJ8Mlohffk7rdi3ndmJw6KxT\nSNIAv97vjMTlsrs5tlTRiaDXGTGRoI+o4W5d5RqTec6be9wA4ZuMyH1FK9HThB8O\nMJXPhsLiRO6+Jse8ipBEew==\n-----END PRIVATE KEY-----",
+            "FIREBASE_CLIENT_EMAIL": "firebase-adminsdk-27do9@sloth-dc40d.iam.gserviceaccount.com",
+            "STRIPE_WEBHOOK_SECRET": "whsec_placeholder"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "GetAlarmsLogGroup"
+      ]
+    },
+    "SetupIntentLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+        },
+        "Handler": "functions/payments.createSetupIntent",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "sloth-alarm-app-dev-setupIntent",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "STRIPE_SECRET_KEY": "sk_test_placeholder",
+            "FIREBASE_PROJECT_ID": "sloth-dc40d",
+            "FIREBASE_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC8lxmFKkI5NhMS\nFUO15k7/DFCID5ra6+yNoR/7l2c8Ix2lrY/Eah4sd/9I9B7oAacJ4v713QQA7gYt\ns7gBmK8LZRvxMsZ6I5e1qG6+dmCdZ5jA7BqzUuhlMKIRFO2RFKiR6HxwFOdkLeKm\n+lgiQUbxRj3KrydpqMDXkTDlooJOD7TLqLohFjEpG1+5i7sVSl5QW35fysg8w7rU\nDJLkBKefmlFFS1lGYcxCj2BArUK7ioJUl58/1KVzUdOuTXBrncFv6uagL8XeXz/w\n31Wd38IUXHAF+/gutbbNOWt/IcAVCvZgTzUVkSh9AZyv/JMWxG5+sSzMA0eUpV7e\npbbyXuq5AgMBAAECggEAOdoAMiFsfzBfWUS8qKglw4d7jMF8t3t37Vpn/T3MpV4A\nUjqTx6Tl7K5C2ZZJhNI884N2wuUxvTdHHe3rnFHCILS7hZoV2JHikA9DKZoWuTJ2\nYXgMGMZuE9x/Ws4YslCsBVZUFe3TrZ+Fz8MsFhYANTNe8TYZ2QezYG1hmo/neRpA\njqPM2+zrWx3TJk0Ys1PO6KnKX5we7hHxC7J5sZWFGsvxJ6CObSKqGRYjPaxI14As\nqc1LXmQ9cbhmp2diLrvJNwYj6TfYImSSZmLzGtQhQVN03pUP7K6j8t825yNyK7UK\nvk5brh8HU4c77Hezk7sj1TFPs1uZGCc44rjVvortoQKBgQD3nJ23QIPf0RuHk2Mm\niusQKzZ+bhT55jrcECVLQ5zmoGkDWITXeT3OpFshwZYXg/32q/izD/mcHWZn42/0\n20IK2PtYomZv/LZT0W/HFrH0QUJKOBpy6eA1ujhHLW72jBBi1Emf8oh6WV+2VYD3\nL7mwN2uTWz1LtnHUpFCf/GnYBwKBgQDC+qBO+lJ0SOhVmcc0eLD6C5DxkAknjGm1\nibDP+qwgI8Atlin1C8bkGkdxR/wXGbAlqU8Xo3u9KaIr7BmQ4PaomPs7fA7LNSIw\nVpTSgPl+F7PklM8Z4BpCM3X25+1YklxkPIyJDyJ8ZNkEw/lrEBytkUQcYuCD6zyX\n2o1rAvz3PwKBgBQu4fQ0AAvYYaQVcXmMzUhOHW0E0BTmnVmev0t5QWrTHHw3VOyz\nZ0RWxU7lFrTn/2WB8w21eaUuCFDjixasYJ+9vA8nfa4XLU17vt69jNfaEes204EW\naz415ax3mZnjJNrJbw7omBNRAao9IfwEGeCxQ8WJJF/tiS3KDwBbdM01AoGAe4CV\nGnGk2NN1lwMZEzt/nmLFJL2/jrV6H+tfe92kOZdrm3SKjxUunj2nEzItk9RJpxFf\nb/G151P/zSJ37zUQCCset8cU99JoHYY6LjxTzHLnF9rKc/FnsJc4GXU++eN7cmKI\nAij8Bx8597LKwe4qvCZPpktbOzQ95VIiUa5K3bECgYA3EkXiL2/IQQqwRuEzLCcM\nnrCR9BQLkgPEugOdsyKEc+UeWy9lW77SY2AtI5E4lJ8Mlohffk7rdi3ndmJw6KxT\nSNIAv97vjMTlsrs5tlTRiaDXGTGRoI+o4W5d5RqTec6be9wA4ZuMyH1FK9HThB8O\nMJXPhsLiRO6+Jse8ipBEew==\n-----END PRIVATE KEY-----",
+            "FIREBASE_CLIENT_EMAIL": "firebase-adminsdk-27do9@sloth-dc40d.iam.gserviceaccount.com",
+            "STRIPE_WEBHOOK_SECRET": "whsec_placeholder"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "SetupIntentLogGroup"
+      ]
+    },
+    "SavePaymentMethodLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+        },
+        "Handler": "functions/payments.savePaymentMethod",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "sloth-alarm-app-dev-savePaymentMethod",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "STRIPE_SECRET_KEY": "sk_test_placeholder",
+            "FIREBASE_PROJECT_ID": "sloth-dc40d",
+            "FIREBASE_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC8lxmFKkI5NhMS\nFUO15k7/DFCID5ra6+yNoR/7l2c8Ix2lrY/Eah4sd/9I9B7oAacJ4v713QQA7gYt\ns7gBmK8LZRvxMsZ6I5e1qG6+dmCdZ5jA7BqzUuhlMKIRFO2RFKiR6HxwFOdkLeKm\n+lgiQUbxRj3KrydpqMDXkTDlooJOD7TLqLohFjEpG1+5i7sVSl5QW35fysg8w7rU\nDJLkBKefmlFFS1lGYcxCj2BArUK7ioJUl58/1KVzUdOuTXBrncFv6uagL8XeXz/w\n31Wd38IUXHAF+/gutbbNOWt/IcAVCvZgTzUVkSh9AZyv/JMWxG5+sSzMA0eUpV7e\npbbyXuq5AgMBAAECggEAOdoAMiFsfzBfWUS8qKglw4d7jMF8t3t37Vpn/T3MpV4A\nUjqTx6Tl7K5C2ZZJhNI884N2wuUxvTdHHe3rnFHCILS7hZoV2JHikA9DKZoWuTJ2\nYXgMGMZuE9x/Ws4YslCsBVZUFe3TrZ+Fz8MsFhYANTNe8TYZ2QezYG1hmo/neRpA\njqPM2+zrWx3TJk0Ys1PO6KnKX5we7hHxC7J5sZWFGsvxJ6CObSKqGRYjPaxI14As\nqc1LXmQ9cbhmp2diLrvJNwYj6TfYImSSZmLzGtQhQVN03pUP7K6j8t825yNyK7UK\nvk5brh8HU4c77Hezk7sj1TFPs1uZGCc44rjVvortoQKBgQD3nJ23QIPf0RuHk2Mm\niusQKzZ+bhT55jrcECVLQ5zmoGkDWITXeT3OpFshwZYXg/32q/izD/mcHWZn42/0\n20IK2PtYomZv/LZT0W/HFrH0QUJKOBpy6eA1ujhHLW72jBBi1Emf8oh6WV+2VYD3\nL7mwN2uTWz1LtnHUpFCf/GnYBwKBgQDC+qBO+lJ0SOhVmcc0eLD6C5DxkAknjGm1\nibDP+qwgI8Atlin1C8bkGkdxR/wXGbAlqU8Xo3u9KaIr7BmQ4PaomPs7fA7LNSIw\nVpTSgPl+F7PklM8Z4BpCM3X25+1YklxkPIyJDyJ8ZNkEw/lrEBytkUQcYuCD6zyX\n2o1rAvz3PwKBgBQu4fQ0AAvYYaQVcXmMzUhOHW0E0BTmnVmev0t5QWrTHHw3VOyz\nZ0RWxU7lFrTn/2WB8w21eaUuCFDjixasYJ+9vA8nfa4XLU17vt69jNfaEes204EW\naz415ax3mZnjJNrJbw7omBNRAao9IfwEGeCxQ8WJJF/tiS3KDwBbdM01AoGAe4CV\nGnGk2NN1lwMZEzt/nmLFJL2/jrV6H+tfe92kOZdrm3SKjxUunj2nEzItk9RJpxFf\nb/G151P/zSJ37zUQCCset8cU99JoHYY6LjxTzHLnF9rKc/FnsJc4GXU++eN7cmKI\nAij8Bx8597LKwe4qvCZPpktbOzQ95VIiUa5K3bECgYA3EkXiL2/IQQqwRuEzLCcM\nnrCR9BQLkgPEugOdsyKEc+UeWy9lW77SY2AtI5E4lJ8Mlohffk7rdi3ndmJw6KxT\nSNIAv97vjMTlsrs5tlTRiaDXGTGRoI+o4W5d5RqTec6be9wA4ZuMyH1FK9HThB8O\nMJXPhsLiRO6+Jse8ipBEew==\n-----END PRIVATE KEY-----",
+            "FIREBASE_CLIENT_EMAIL": "firebase-adminsdk-27do9@sloth-dc40d.iam.gserviceaccount.com",
+            "STRIPE_WEBHOOK_SECRET": "whsec_placeholder"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "SavePaymentMethodLogGroup"
+      ]
+    },
+    "GetPaymentMethodLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+        },
+        "Handler": "functions/payments.getPaymentMethod",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "sloth-alarm-app-dev-getPaymentMethod",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "STRIPE_SECRET_KEY": "sk_test_placeholder",
+            "FIREBASE_PROJECT_ID": "sloth-dc40d",
+            "FIREBASE_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC8lxmFKkI5NhMS\nFUO15k7/DFCID5ra6+yNoR/7l2c8Ix2lrY/Eah4sd/9I9B7oAacJ4v713QQA7gYt\ns7gBmK8LZRvxMsZ6I5e1qG6+dmCdZ5jA7BqzUuhlMKIRFO2RFKiR6HxwFOdkLeKm\n+lgiQUbxRj3KrydpqMDXkTDlooJOD7TLqLohFjEpG1+5i7sVSl5QW35fysg8w7rU\nDJLkBKefmlFFS1lGYcxCj2BArUK7ioJUl58/1KVzUdOuTXBrncFv6uagL8XeXz/w\n31Wd38IUXHAF+/gutbbNOWt/IcAVCvZgTzUVkSh9AZyv/JMWxG5+sSzMA0eUpV7e\npbbyXuq5AgMBAAECggEAOdoAMiFsfzBfWUS8qKglw4d7jMF8t3t37Vpn/T3MpV4A\nUjqTx6Tl7K5C2ZZJhNI884N2wuUxvTdHHe3rnFHCILS7hZoV2JHikA9DKZoWuTJ2\nYXgMGMZuE9x/Ws4YslCsBVZUFe3TrZ+Fz8MsFhYANTNe8TYZ2QezYG1hmo/neRpA\njqPM2+zrWx3TJk0Ys1PO6KnKX5we7hHxC7J5sZWFGsvxJ6CObSKqGRYjPaxI14As\nqc1LXmQ9cbhmp2diLrvJNwYj6TfYImSSZmLzGtQhQVN03pUP7K6j8t825yNyK7UK\nvk5brh8HU4c77Hezk7sj1TFPs1uZGCc44rjVvortoQKBgQD3nJ23QIPf0RuHk2Mm\niusQKzZ+bhT55jrcECVLQ5zmoGkDWITXeT3OpFshwZYXg/32q/izD/mcHWZn42/0\n20IK2PtYomZv/LZT0W/HFrH0QUJKOBpy6eA1ujhHLW72jBBi1Emf8oh6WV+2VYD3\nL7mwN2uTWz1LtnHUpFCf/GnYBwKBgQDC+qBO+lJ0SOhVmcc0eLD6C5DxkAknjGm1\nibDP+qwgI8Atlin1C8bkGkdxR/wXGbAlqU8Xo3u9KaIr7BmQ4PaomPs7fA7LNSIw\nVpTSgPl+F7PklM8Z4BpCM3X25+1YklxkPIyJDyJ8ZNkEw/lrEBytkUQcYuCD6zyX\n2o1rAvz3PwKBgBQu4fQ0AAvYYaQVcXmMzUhOHW0E0BTmnVmev0t5QWrTHHw3VOyz\nZ0RWxU7lFrTn/2WB8w21eaUuCFDjixasYJ+9vA8nfa4XLU17vt69jNfaEes204EW\naz415ax3mZnjJNrJbw7omBNRAao9IfwEGeCxQ8WJJF/tiS3KDwBbdM01AoGAe4CV\nGnGk2NN1lwMZEzt/nmLFJL2/jrV6H+tfe92kOZdrm3SKjxUunj2nEzItk9RJpxFf\nb/G151P/zSJ37zUQCCset8cU99JoHYY6LjxTzHLnF9rKc/FnsJc4GXU++eN7cmKI\nAij8Bx8597LKwe4qvCZPpktbOzQ95VIiUa5K3bECgYA3EkXiL2/IQQqwRuEzLCcM\nnrCR9BQLkgPEugOdsyKEc+UeWy9lW77SY2AtI5E4lJ8Mlohffk7rdi3ndmJw6KxT\nSNIAv97vjMTlsrs5tlTRiaDXGTGRoI+o4W5d5RqTec6be9wA4ZuMyH1FK9HThB8O\nMJXPhsLiRO6+Jse8ipBEew==\n-----END PRIVATE KEY-----",
+            "FIREBASE_CLIENT_EMAIL": "firebase-adminsdk-27do9@sloth-dc40d.iam.gserviceaccount.com",
+            "STRIPE_WEBHOOK_SECRET": "whsec_placeholder"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "GetPaymentMethodLogGroup"
+      ]
+    },
+    "CheckLocationLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+        },
+        "Handler": "functions/alarms.checkLocation",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "sloth-alarm-app-dev-checkLocation",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "STRIPE_SECRET_KEY": "sk_test_placeholder",
+            "FIREBASE_PROJECT_ID": "sloth-dc40d",
+            "FIREBASE_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC8lxmFKkI5NhMS\nFUO15k7/DFCID5ra6+yNoR/7l2c8Ix2lrY/Eah4sd/9I9B7oAacJ4v713QQA7gYt\ns7gBmK8LZRvxMsZ6I5e1qG6+dmCdZ5jA7BqzUuhlMKIRFO2RFKiR6HxwFOdkLeKm\n+lgiQUbxRj3KrydpqMDXkTDlooJOD7TLqLohFjEpG1+5i7sVSl5QW35fysg8w7rU\nDJLkBKefmlFFS1lGYcxCj2BArUK7ioJUl58/1KVzUdOuTXBrncFv6uagL8XeXz/w\n31Wd38IUXHAF+/gutbbNOWt/IcAVCvZgTzUVkSh9AZyv/JMWxG5+sSzMA0eUpV7e\npbbyXuq5AgMBAAECggEAOdoAMiFsfzBfWUS8qKglw4d7jMF8t3t37Vpn/T3MpV4A\nUjqTx6Tl7K5C2ZZJhNI884N2wuUxvTdHHe3rnFHCILS7hZoV2JHikA9DKZoWuTJ2\nYXgMGMZuE9x/Ws4YslCsBVZUFe3TrZ+Fz8MsFhYANTNe8TYZ2QezYG1hmo/neRpA\njqPM2+zrWx3TJk0Ys1PO6KnKX5we7hHxC7J5sZWFGsvxJ6CObSKqGRYjPaxI14As\nqc1LXmQ9cbhmp2diLrvJNwYj6TfYImSSZmLzGtQhQVN03pUP7K6j8t825yNyK7UK\nvk5brh8HU4c77Hezk7sj1TFPs1uZGCc44rjVvortoQKBgQD3nJ23QIPf0RuHk2Mm\niusQKzZ+bhT55jrcECVLQ5zmoGkDWITXeT3OpFshwZYXg/32q/izD/mcHWZn42/0\n20IK2PtYomZv/LZT0W/HFrH0QUJKOBpy6eA1ujhHLW72jBBi1Emf8oh6WV+2VYD3\nL7mwN2uTWz1LtnHUpFCf/GnYBwKBgQDC+qBO+lJ0SOhVmcc0eLD6C5DxkAknjGm1\nibDP+qwgI8Atlin1C8bkGkdxR/wXGbAlqU8Xo3u9KaIr7BmQ4PaomPs7fA7LNSIw\nVpTSgPl+F7PklM8Z4BpCM3X25+1YklxkPIyJDyJ8ZNkEw/lrEBytkUQcYuCD6zyX\n2o1rAvz3PwKBgBQu4fQ0AAvYYaQVcXmMzUhOHW0E0BTmnVmev0t5QWrTHHw3VOyz\nZ0RWxU7lFrTn/2WB8w21eaUuCFDjixasYJ+9vA8nfa4XLU17vt69jNfaEes204EW\naz415ax3mZnjJNrJbw7omBNRAao9IfwEGeCxQ8WJJF/tiS3KDwBbdM01AoGAe4CV\nGnGk2NN1lwMZEzt/nmLFJL2/jrV6H+tfe92kOZdrm3SKjxUunj2nEzItk9RJpxFf\nb/G151P/zSJ37zUQCCset8cU99JoHYY6LjxTzHLnF9rKc/FnsJc4GXU++eN7cmKI\nAij8Bx8597LKwe4qvCZPpktbOzQ95VIiUa5K3bECgYA3EkXiL2/IQQqwRuEzLCcM\nnrCR9BQLkgPEugOdsyKEc+UeWy9lW77SY2AtI5E4lJ8Mlohffk7rdi3ndmJw6KxT\nSNIAv97vjMTlsrs5tlTRiaDXGTGRoI+o4W5d5RqTec6be9wA4ZuMyH1FK9HThB8O\nMJXPhsLiRO6+Jse8ipBEew==\n-----END PRIVATE KEY-----",
+            "FIREBASE_CLIENT_EMAIL": "firebase-adminsdk-27do9@sloth-dc40d.iam.gserviceaccount.com",
+            "STRIPE_WEBHOOK_SECRET": "whsec_placeholder"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "CheckLocationLogGroup"
+      ]
+    },
+    "ProcessPaymentsLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+        },
+        "Handler": "functions/payments.processPayments",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "sloth-alarm-app-dev-processPayments",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "STRIPE_SECRET_KEY": "sk_test_placeholder",
+            "FIREBASE_PROJECT_ID": "sloth-dc40d",
+            "FIREBASE_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC8lxmFKkI5NhMS\nFUO15k7/DFCID5ra6+yNoR/7l2c8Ix2lrY/Eah4sd/9I9B7oAacJ4v713QQA7gYt\ns7gBmK8LZRvxMsZ6I5e1qG6+dmCdZ5jA7BqzUuhlMKIRFO2RFKiR6HxwFOdkLeKm\n+lgiQUbxRj3KrydpqMDXkTDlooJOD7TLqLohFjEpG1+5i7sVSl5QW35fysg8w7rU\nDJLkBKefmlFFS1lGYcxCj2BArUK7ioJUl58/1KVzUdOuTXBrncFv6uagL8XeXz/w\n31Wd38IUXHAF+/gutbbNOWt/IcAVCvZgTzUVkSh9AZyv/JMWxG5+sSzMA0eUpV7e\npbbyXuq5AgMBAAECggEAOdoAMiFsfzBfWUS8qKglw4d7jMF8t3t37Vpn/T3MpV4A\nUjqTx6Tl7K5C2ZZJhNI884N2wuUxvTdHHe3rnFHCILS7hZoV2JHikA9DKZoWuTJ2\nYXgMGMZuE9x/Ws4YslCsBVZUFe3TrZ+Fz8MsFhYANTNe8TYZ2QezYG1hmo/neRpA\njqPM2+zrWx3TJk0Ys1PO6KnKX5we7hHxC7J5sZWFGsvxJ6CObSKqGRYjPaxI14As\nqc1LXmQ9cbhmp2diLrvJNwYj6TfYImSSZmLzGtQhQVN03pUP7K6j8t825yNyK7UK\nvk5brh8HU4c77Hezk7sj1TFPs1uZGCc44rjVvortoQKBgQD3nJ23QIPf0RuHk2Mm\niusQKzZ+bhT55jrcECVLQ5zmoGkDWITXeT3OpFshwZYXg/32q/izD/mcHWZn42/0\n20IK2PtYomZv/LZT0W/HFrH0QUJKOBpy6eA1ujhHLW72jBBi1Emf8oh6WV+2VYD3\nL7mwN2uTWz1LtnHUpFCf/GnYBwKBgQDC+qBO+lJ0SOhVmcc0eLD6C5DxkAknjGm1\nibDP+qwgI8Atlin1C8bkGkdxR/wXGbAlqU8Xo3u9KaIr7BmQ4PaomPs7fA7LNSIw\nVpTSgPl+F7PklM8Z4BpCM3X25+1YklxkPIyJDyJ8ZNkEw/lrEBytkUQcYuCD6zyX\n2o1rAvz3PwKBgBQu4fQ0AAvYYaQVcXmMzUhOHW0E0BTmnVmev0t5QWrTHHw3VOyz\nZ0RWxU7lFrTn/2WB8w21eaUuCFDjixasYJ+9vA8nfa4XLU17vt69jNfaEes204EW\naz415ax3mZnjJNrJbw7omBNRAao9IfwEGeCxQ8WJJF/tiS3KDwBbdM01AoGAe4CV\nGnGk2NN1lwMZEzt/nmLFJL2/jrV6H+tfe92kOZdrm3SKjxUunj2nEzItk9RJpxFf\nb/G151P/zSJ37zUQCCset8cU99JoHYY6LjxTzHLnF9rKc/FnsJc4GXU++eN7cmKI\nAij8Bx8597LKwe4qvCZPpktbOzQ95VIiUa5K3bECgYA3EkXiL2/IQQqwRuEzLCcM\nnrCR9BQLkgPEugOdsyKEc+UeWy9lW77SY2AtI5E4lJ8Mlohffk7rdi3ndmJw6KxT\nSNIAv97vjMTlsrs5tlTRiaDXGTGRoI+o4W5d5RqTec6be9wA4ZuMyH1FK9HThB8O\nMJXPhsLiRO6+Jse8ipBEew==\n-----END PRIVATE KEY-----",
+            "FIREBASE_CLIENT_EMAIL": "firebase-adminsdk-27do9@sloth-dc40d.iam.gserviceaccount.com",
+            "STRIPE_WEBHOOK_SECRET": "whsec_placeholder"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "ProcessPaymentsLogGroup"
+      ]
+    },
+    "CreateAlarmLambdaVersionfukZVF7AsMGNrzgT0WAPXSD56dNh9kFM7cSsIjfJM4": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CreateAlarmLambdaFunction"
+        },
+        "CodeSha256": "kpy7JS+uRrzit2f/GG6SPB8V/ly7TSVcpyioUlto85A="
+      }
+    },
+    "GetAlarmsLambdaVersionlbWWTK9uSIHOiH3CBLe7SMtbdSkULDhPkL3QJZpKi5E": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "GetAlarmsLambdaFunction"
+        },
+        "CodeSha256": "kpy7JS+uRrzit2f/GG6SPB8V/ly7TSVcpyioUlto85A="
+      }
+    },
+    "SetupIntentLambdaVersionfIVERBkESLRpRkNnKACl5KaWt7XsTulfrPAruPAxywg": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "SetupIntentLambdaFunction"
+        },
+        "CodeSha256": "kpy7JS+uRrzit2f/GG6SPB8V/ly7TSVcpyioUlto85A="
+      }
+    },
+    "SavePaymentMethodLambdaVersionl2NnLeOnnhJTuhbqkLKmi4YKgSvpKRAthIBDiIkM": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "SavePaymentMethodLambdaFunction"
+        },
+        "CodeSha256": "kpy7JS+uRrzit2f/GG6SPB8V/ly7TSVcpyioUlto85A="
+      }
+    },
+    "GetPaymentMethodLambdaVersionxHP51dEKtUgHio1XFUDmSwNdXLP0PAbB7nGQsEgJ6w": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "GetPaymentMethodLambdaFunction"
+        },
+        "CodeSha256": "kpy7JS+uRrzit2f/GG6SPB8V/ly7TSVcpyioUlto85A="
+      }
+    },
+    "CheckLocationLambdaVersionwc5XBNLEIRkEiw6monnq1nizJdTw3pdxK0CSRPJA48": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CheckLocationLambdaFunction"
+        },
+        "CodeSha256": "kpy7JS+uRrzit2f/GG6SPB8V/ly7TSVcpyioUlto85A="
+      }
+    },
+    "ProcessPaymentsLambdaVersionwrBoFhaFJmE6h0O34JJUoUxcBLAHIFo8AHVBFZslU": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "ProcessPaymentsLambdaFunction"
+        },
+        "CodeSha256": "kpy7JS+uRrzit2f/GG6SPB8V/ly7TSVcpyioUlto85A="
+      }
+    },
+    "ProcessPaymentsEventsRuleSchedule1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "rate(1 minute)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "ProcessPaymentsLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Id": "processPaymentsSchedule"
+          }
+        ]
+      }
+    },
+    "ProcessPaymentsLambdaPermissionEventsRuleSchedule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ProcessPaymentsLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "ProcessPaymentsEventsRuleSchedule1",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "ApiGatewayRestApi": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "dev-sloth-alarm-app",
+        "EndpointConfiguration": {
+          "Types": [
+            "EDGE"
+          ]
+        },
+        "Policy": ""
+      }
+    },
+    "ApiGatewayResourceAlarms": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "alarms",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceSetupDashintent": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "setup-intent",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceSaveDashpaymentDashmethod": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "save-payment-method",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourcePaymentDashmethod": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "payment-method",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceCheckDashlocation": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "check-location",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodAlarmsOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "MOCK",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ]
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceAlarms"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodSetupDashintentOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "MOCK",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ]
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceSetupDashintent"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodSaveDashpaymentDashmethodOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "MOCK",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ]
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceSaveDashpaymentDashmethod"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodPaymentDashmethodOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "MOCK",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ]
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourcePaymentDashmethod"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodCheckDashlocationOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "MOCK",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ]
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceCheckDashlocation"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodAlarmsPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceAlarms"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "CreateAlarmLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "CreateAlarmLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodAlarmsGet": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "GET",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceAlarms"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "GetAlarmsLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "GetAlarmsLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodSetupDashintentPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceSetupDashintent"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "SetupIntentLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "SetupIntentLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodSaveDashpaymentDashmethodPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceSaveDashpaymentDashmethod"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "SavePaymentMethodLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "SavePaymentMethodLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodPaymentDashmethodGet": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "GET",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourcePaymentDashmethod"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "GetPaymentMethodLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "GetPaymentMethodLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodCheckDashlocationPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceCheckDashlocation"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "CheckLocationLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "CheckLocationLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayDeployment1732428364720": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "StageName": "dev"
+      },
+      "DependsOn": [
+        "ApiGatewayMethodAlarmsOptions",
+        "ApiGatewayMethodSetupDashintentOptions",
+        "ApiGatewayMethodSaveDashpaymentDashmethodOptions",
+        "ApiGatewayMethodPaymentDashmethodOptions",
+        "ApiGatewayMethodCheckDashlocationOptions",
+        "ApiGatewayMethodAlarmsPost",
+        "ApiGatewayMethodAlarmsGet",
+        "ApiGatewayMethodSetupDashintentPost",
+        "ApiGatewayMethodSaveDashpaymentDashmethodPost",
+        "ApiGatewayMethodPaymentDashmethodGet",
+        "ApiGatewayMethodCheckDashlocationPost"
+      ]
+    },
+    "CreateAlarmLambdaPermissionApiGateway": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CreateAlarmLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "/*/*"
+            ]
+          ]
+        }
+      }
+    },
+    "GetAlarmsLambdaPermissionApiGateway": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GetAlarmsLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "/*/*"
+            ]
+          ]
+        }
+      }
+    },
+    "SetupIntentLambdaPermissionApiGateway": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "SetupIntentLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "/*/*"
+            ]
+          ]
+        }
+      }
+    },
+    "SavePaymentMethodLambdaPermissionApiGateway": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "SavePaymentMethodLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "/*/*"
+            ]
+          ]
+        }
+      }
+    },
+    "GetPaymentMethodLambdaPermissionApiGateway": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GetPaymentMethodLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "/*/*"
+            ]
+          ]
+        }
+      }
+    },
+    "CheckLocationLambdaPermissionApiGateway": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CheckLocationLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "/*/*"
+            ]
+          ]
+        }
+      }
+    },
+    "AlarmsTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "sloth-alarm-app-dev-alarms",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "userId",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "id",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "userId",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "id",
+            "KeyType": "RANGE"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST"
+      }
+    },
+    "UsersTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "sloth-alarm-app-dev-users",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "userId",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "userId",
+            "KeyType": "HASH"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST"
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      },
+      "Export": {
+        "Name": "sls-sloth-alarm-app-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "CreateAlarmLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "CreateAlarmLambdaVersionfukZVF7AsMGNrzgT0WAPXSD56dNh9kFM7cSsIjfJM4"
+      },
+      "Export": {
+        "Name": "sls-sloth-alarm-app-dev-CreateAlarmLambdaFunctionQualifiedArn"
+      }
+    },
+    "GetAlarmsLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "GetAlarmsLambdaVersionlbWWTK9uSIHOiH3CBLe7SMtbdSkULDhPkL3QJZpKi5E"
+      },
+      "Export": {
+        "Name": "sls-sloth-alarm-app-dev-GetAlarmsLambdaFunctionQualifiedArn"
+      }
+    },
+    "SetupIntentLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "SetupIntentLambdaVersionfIVERBkESLRpRkNnKACl5KaWt7XsTulfrPAruPAxywg"
+      },
+      "Export": {
+        "Name": "sls-sloth-alarm-app-dev-SetupIntentLambdaFunctionQualifiedArn"
+      }
+    },
+    "SavePaymentMethodLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "SavePaymentMethodLambdaVersionl2NnLeOnnhJTuhbqkLKmi4YKgSvpKRAthIBDiIkM"
+      },
+      "Export": {
+        "Name": "sls-sloth-alarm-app-dev-SavePaymentMethodLambdaFunctionQualifiedArn"
+      }
+    },
+    "GetPaymentMethodLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "GetPaymentMethodLambdaVersionxHP51dEKtUgHio1XFUDmSwNdXLP0PAbB7nGQsEgJ6w"
+      },
+      "Export": {
+        "Name": "sls-sloth-alarm-app-dev-GetPaymentMethodLambdaFunctionQualifiedArn"
+      }
+    },
+    "CheckLocationLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "CheckLocationLambdaVersionwc5XBNLEIRkEiw6monnq1nizJdTw3pdxK0CSRPJA48"
+      },
+      "Export": {
+        "Name": "sls-sloth-alarm-app-dev-CheckLocationLambdaFunctionQualifiedArn"
+      }
+    },
+    "ProcessPaymentsLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "ProcessPaymentsLambdaVersionwrBoFhaFJmE6h0O34JJUoUxcBLAHIFo8AHVBFZslU"
+      },
+      "Export": {
+        "Name": "sls-sloth-alarm-app-dev-ProcessPaymentsLambdaFunctionQualifiedArn"
+      }
+    },
+    "ServiceEndpoint": {
+      "Description": "URL of the service endpoint",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ApiGatewayRestApi"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/dev"
+          ]
+        ]
+      },
+      "Export": {
+        "Name": "sls-sloth-alarm-app-dev-ServiceEndpoint"
+      }
+    }
+  }
+}
