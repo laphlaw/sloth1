@@ -213,7 +213,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+          "S3Key": "serverless/sloth-alarm-app/dev/1732567069003-2024-11-25T20:37:49.003Z/sloth-alarm-app.zip"
         },
         "Handler": "functions/alarms.create",
         "Runtime": "nodejs18.x",
@@ -247,7 +247,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+          "S3Key": "serverless/sloth-alarm-app/dev/1732567069003-2024-11-25T20:37:49.003Z/sloth-alarm-app.zip"
         },
         "Handler": "functions/alarms.list",
         "Runtime": "nodejs18.x",
@@ -281,7 +281,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+          "S3Key": "serverless/sloth-alarm-app/dev/1732567069003-2024-11-25T20:37:49.003Z/sloth-alarm-app.zip"
         },
         "Handler": "functions/payments.createSetupIntent",
         "Runtime": "nodejs18.x",
@@ -315,7 +315,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+          "S3Key": "serverless/sloth-alarm-app/dev/1732567069003-2024-11-25T20:37:49.003Z/sloth-alarm-app.zip"
         },
         "Handler": "functions/payments.savePaymentMethod",
         "Runtime": "nodejs18.x",
@@ -349,7 +349,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+          "S3Key": "serverless/sloth-alarm-app/dev/1732567069003-2024-11-25T20:37:49.003Z/sloth-alarm-app.zip"
         },
         "Handler": "functions/payments.getPaymentMethod",
         "Runtime": "nodejs18.x",
@@ -383,7 +383,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+          "S3Key": "serverless/sloth-alarm-app/dev/1732567069003-2024-11-25T20:37:49.003Z/sloth-alarm-app.zip"
         },
         "Handler": "functions/alarms.checkLocation",
         "Runtime": "nodejs18.x",
@@ -417,7 +417,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/sloth-alarm-app/dev/1732428371640-2024-11-24T06:06:11.640Z/sloth-alarm-app.zip"
+          "S3Key": "serverless/sloth-alarm-app/dev/1732567069003-2024-11-25T20:37:49.003Z/sloth-alarm-app.zip"
         },
         "Handler": "functions/payments.processPayments",
         "Runtime": "nodejs18.x",
@@ -1139,7 +1139,7 @@
         "CheckLocationLambdaPermissionApiGateway"
       ]
     },
-    "ApiGatewayDeployment1732428364720": {
+    "ApiGatewayDeployment1732567063072": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {

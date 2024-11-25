@@ -6,6 +6,7 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: us-east-1
+  stage: dev  # Set a default stage value
   environment:
     STRIPE_SECRET_KEY: "sk_test_placeholder"
     FIREBASE_PROJECT_ID: "sloth-dc40d"
@@ -21,8 +22,8 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: 
-        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-${sls:stage}-alarms"
-        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-${sls:stage}-users"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/sloth-alarm-app-dev-alarms"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/sloth-alarm-app-dev-users"
 
 functions:
   createAlarm:
@@ -83,7 +84,7 @@ resources:
     AlarmsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:service}-${sls:stage}-alarms
+        TableName: sloth-alarm-app-dev-alarms
         AttributeDefinitions:
           - AttributeName: userId
             AttributeType: S
@@ -99,7 +100,7 @@ resources:
     UsersTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:service}-${sls:stage}-users
+        TableName: sloth-alarm-app-dev-users
         AttributeDefinitions:
           - AttributeName: userId
             AttributeType: S
