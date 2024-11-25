@@ -84,7 +84,6 @@ const CreateAlarm = () => {
 
   useEffect(() => {
     if (navigator.geolocation) {
-      console.log("Inside navigator.geolocation")
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setDefaultCenter({
@@ -97,7 +96,6 @@ const CreateAlarm = () => {
         }
       );
     } else {
-      console.log("Did not go inside navigator.geolocation")
     }
   }, []);
 
